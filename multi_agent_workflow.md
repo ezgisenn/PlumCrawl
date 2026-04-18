@@ -1,25 +1,23 @@
-# Multi-Agent AI Workflow Log
+# Multi-Agent AI Workflow: The "Agent Teams" Architecture
 
 ## Introduction
-PlumCrawl was developed not as a multi-agent runtime, but through a simulated multi-agent AI development process. The human developer acted as the **Product Manager & System Architect**, assigning specific responsibilities to distinct AI personas, managing their interactions, and evaluating their outputs to ensure the "zero-dependency" and "concurrency" requirements were met.
+Based on the principles of advanced multi-agent systems, PlumCrawl is architected specifically around the **"Agent Teams"** paradigm. Rather than using isolated, hierarchical subagents, our system employs a collaborative environment where a Team Lead orchestrates multiple Teammate Agents sharing a centralized task state.
 
-## The AI Agent Team & Responsibilities
+## Architectural Mapping to "Agent Teams"
 
-1.  **Agent 1 (System Architect):**
-    * *Role:* Defined the overall system architecture and drafted the PRD.
-    * *Decision:* Enforced the strict zero-dependency rule and proposed the `sqlite3` WAL mode strategy for concurrency.
-2.  **Agent 2 (Database & Storage Engineer):**
-    * *Role:* Designed the SQLite schema (`schema.sql`).
-    * *Decision:* Implemented `pages` and `crawl_queue` tables to support interruption recovery. Transitioned from single inserts to `executemany` bulk inserts to resolve `OperationalError: database is locked` bottlenecks during high-speed crawls.
-3.  **Agent 3 (Crawler & Concurrency Specialist):**
-    * *Role:* Developed `indexer.py` using native `threading` and `urllib`.
-    * *Decision:* Implemented a dynamic "Back-Pressure" mechanism. When the queue exceeds the limit, threads pause link extraction but continue parsing HTML to drain the queue. Added native `gzip` decompression and stealth headers to bypass 403 Forbidden errors on large targets like Wikipedia.
-4.  **Agent 4 (Information Retrieval Engineer):**
-    * *Role:* Developed `searcher.py`.
-    * *Decision:* Created a scoring algorithm combining word frequency and a depth penalty weight ($1.0 / (depth + 1.0)$) to ensure pages closer to the origin rank higher.
-5.  **Agent 5 (UI/CLI Developer):**
-    * *Role:* Built the interactive telemetry interface.
-    * *Decision:* Transitioned from a CLI to a native Web UI (`app_web.py` using `http.server`) featuring the "Plum Dark Mode" aesthetic, enabling users to execute searches seamlessly while the background thread updates indexing stats every 1.5 seconds.
+Our system perfectly aligns with the collaborative Agent Teams workflow:
 
-## Workflow Evaluation
-The multi-agent approach allowed for rapid iteration. When Agent 3 faced database locks due to high concurrency, the Architect (Human) intervened, directing Agent 2 to optimize the SQL queries. This collaborative loop ensured a highly scalable and robust final product.
+1. **Main Agent (Team Lead):** The Orchestrator (`app_web.py` & `PlumIndexer`). It receives the user's initial input (origin URL and depth) and spawns the team of crawler and searcher agents.
+2. **Shared Task List:** Our SQLite database (specifically the `crawl_queue` and `pages` tables with WAL mode enabled). This is the central source of truth where all agents communicate their progress, claim tasks, and deposit results.
+3. **Teammates (Worker Agents):** The individual concurrency threads (`Worker-1` to `Worker-5`) and the Information Retrieval Engine (`searcher.py`).
+
+## Agent Interactions and Communication (Peer-to-Peer)
+
+In our "Agent Teams" architecture, agents do not communicate by passing messages sequentially back to the Team Lead. Instead, they use **State-Based Peer Communication** via the Shared Task List:
+* **Task Claiming:** When a Teammate (Crawler Agent) is idle, it queries the Shared Task List for a URL with `status = 0`. It instantly updates the state to `status = 1` (Processing), signaling to all other peer agents: *"I have claimed this task, do not crawl it."*
+* **Result Sharing:** Once an agent parses a page, it bulk-inserts newly discovered URLs back into the Shared Task List. Another idle Teammate instantly sees these new tasks and picks them up.
+* **Cross-Discipline Communication:** The Indexer Agents and the Search Agent operate concurrently. The Search Agent continuously reads the `pages` table (the finalized shared state), meaning it communicates dynamically with the Indexer Agents in real-time as they write data.
+
+## System Workflow Decisions
+* **Decision 1:** To implement the "Shared Task List" reliably without external libraries, we utilized `sqlite3` with Write-Ahead Logging (WAL) and `executemany` bulk transactions, preventing database locks during intense peer communication.
+* **Decision 2:** We implemented a "Smart Back-Pressure" mechanism. If the Shared Task List becomes overloaded (e.g., > 5000 tasks), Teammates communicate this state and temporarily pause extracting new tasks, focusing purely on draining the existing shared queue.

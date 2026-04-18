@@ -1,6 +1,6 @@
-# Agent 3: Crawler & Concurrency Specialist
-**Role:** Web Scraping & Threading Expert
-**Responsibilities:** - Implementing the `index(origin, k)` function using `threading` and `urllib`.
-- Designing the "Back-Pressure" mechanism to manage queue depth without crashing.
-- Parsing HTML to extract links while ignoring `<script>` and `<style>` tags.
-- Bypassing anti-bot firewalls using stealth headers and native `gzip` decompression.
+# Agent 3: The Collaborative Crawlers
+**Role:** Teammates / Data Ingestion Experts (`indexer.py` Threads)
+**Responsibilities:** - Acting as concurrent Teammate Agents (`Worker-1` to `Worker-5`).
+- Pulling tasks from the Shared Task List, executing HTTP requests, and parsing HTML.
+- Communicating newly discovered links back to the Shared Task List for other peers to process.
+- Respecting dynamic back-pressure limits to maintain team efficiency.

@@ -1,6 +1,5 @@
-# Agent 4: Information Retrieval Engineer
-**Role:** Search Algorithm Developer
-**Responsibilities:** - Implementing the `search(query)` function.
-- Querying the database concurrently without interrupting the active crawling process.
-- Developing a relevancy algorithm based on Term Frequency (TF) and a Tree Depth Penalty.
-- Formatting the final output strictly as a list of `(relevant_url, origin_url, depth)` triples.
+# Agent 4: The Information Retrieval Specialist
+**Role:** Cross-Functional Teammate (`searcher.py`)
+**Responsibilities:** - Operating concurrently alongside the Crawler Teammates.
+- Continuously reading the finalized data from the Shared Task List to provide real-time search results.
+- Calculating relevancy using Term Frequency (TF) and Depth Penalty without interrupting the ongoing indexing workflow.
